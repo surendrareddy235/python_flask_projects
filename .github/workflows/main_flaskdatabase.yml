@@ -14,21 +14,25 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read # Required for actions/checkout
+      contents: read #This is required for actions/checkout
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
+      - name: Create and start virtual environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+      
       - name: Install dependencies
         run: pip install -r requirements.txt
         
-      # Optional: Add step to run tests here (e.g., PyTest, Unittest)
+      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
@@ -39,6 +43,7 @@ jobs:
           name: python-app
           path: |
             release.zip
+            !venv/
 
   deploy:
     runs-on: ubuntu-latest
@@ -47,8 +52,8 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write # Required for requesting the JWT
-      contents: read # Required for actions/checkout
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
@@ -59,20 +64,18 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
-      - name: Run database migration
-        run: |
-          python -c "from flaskdatabase import db, app; app.app_context().push(); db.create_all()"
-
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F022458D45274386898EADE7FBC22BFC }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_32223A43E50645A195101E491DE4492C }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_273A77B1D7894EF19610481E13E1A08A }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_BC80E9FB60C24157B62FFD02C435DDFA }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_80CC878A628F468F87A2DB996965FC16 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F6983CF4B4544FB6AEF576739B90E701 }}
 
-      - name: Deploy to Azure Web App
+      - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
           app-name: 'flaskdatabase'
           slot-name: 'Production'
+          
