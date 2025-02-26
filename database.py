@@ -37,7 +37,6 @@ def formpage():
     new_user = User(name=name, email=email, password=password)
     db.session.add(new_user)
     db.session.commit()
-
     return redirect("/success")
 
 @app.route("/success")
